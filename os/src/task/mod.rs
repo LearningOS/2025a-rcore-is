@@ -55,9 +55,11 @@ lazy_static! {
         let num_app = get_num_app();
         println!("num_app = {}", num_app);
         let mut tasks: Vec<TaskControlBlock> = Vec::new();
+        
         for i in 0..num_app {
             tasks.push(TaskControlBlock::new(get_app_data(i), i));
         }
+
         TaskManager {
             num_app,
             inner: unsafe {
@@ -153,6 +155,22 @@ impl TaskManager {
             panic!("All applications completed!");
         }
     }
+    /// [CH4]
+    /// incr certain syscall id for current task
+    fn incr_syscall_count(&self, syscall_id:usize) {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let mut syscall_counters = inner.tasks[current].syscall_counters.exclusive_access();
+        syscall_counters[syscall_id] += 1;
+    }
+    /// [CH4]
+    /// get certain syscall id for current task
+    fn get_syscall_count(&self, syscall_id:usize) -> usize {
+        let inner = self.inner.exclusive_access();
+        let current = inner.current_task;
+        let syscall_counters = inner.tasks[current].syscall_counters.exclusive_access();
+        syscall_counters[syscall_id]
+    }
 }
 
 /// Run the first task in task list.
@@ -201,4 +219,15 @@ pub fn current_trap_cx() -> &'static mut TrapContext {
 /// Change the current 'Running' task's program break
 pub fn change_program_brk(size: i32) -> Option<usize> {
     TASK_MANAGER.change_current_program_brk(size)
+}
+
+
+/// Increase syscall counter for current task
+pub fn incr_syscall_count(syscall_id: usize) {
+    TASK_MANAGER.incr_syscall_count(syscall_id)
+}
+
+/// Get syscall counter for current task
+pub fn get_syscall_count(syscall_id: usize) -> usize {
+    TASK_MANAGER.get_syscall_count(syscall_id)
 }

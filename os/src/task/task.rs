@@ -4,7 +4,10 @@ use crate::config::TRAP_CONTEXT_BASE;
 use crate::mm::{
     kernel_stack_position, MapPermission, MemorySet, PhysPageNum, VirtAddr, KERNEL_SPACE,
 };
+use crate::sync::UPSafeCell;
 use crate::trap::{trap_handler, TrapContext};
+use crate::syscall::MAX_SYSCALL_NUM;
+
 
 /// The task control block (TCB) of a task.
 pub struct TaskControlBlock {
@@ -28,6 +31,9 @@ pub struct TaskControlBlock {
 
     /// Program break
     pub program_brk: usize,
+
+    /// Syscall counters
+    pub syscall_counters: UPSafeCell<[usize; MAX_SYSCALL_NUM]>,
 }
 
 impl TaskControlBlock {
@@ -63,6 +69,7 @@ impl TaskControlBlock {
             base_size: user_sp,
             heap_bottom: user_sp,
             program_brk: user_sp,
+            syscall_counters: unsafe {UPSafeCell::new([0;MAX_SYSCALL_NUM])},
         };
         // prepare TrapContext in user space
         let trap_cx = task_control_block.get_trap_cx();
