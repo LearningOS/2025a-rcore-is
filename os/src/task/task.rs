@@ -111,6 +111,12 @@ impl TaskControlBlock {
         let end_va = VirtAddr(start + len);
         self.memory_set.mmap(start_va, end_va, perm)
     }
+    /// unmap memory for current task (munmap)
+    pub fn munmap(&mut self, start: usize, len:usize) -> isize {
+        let start_va = VirtAddr(start);
+        let end_va = VirtAddr(start + len);
+        self.memory_set.munmap(start_va, end_va)
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]

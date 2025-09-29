@@ -284,6 +284,41 @@ impl MemorySet {
             None);
         0
     }
+    /// unmap a virtual address range
+    pub fn munmap(&mut self, start_va: VirtAddr, end_va: VirtAddr) -> isize {
+        let start_vpn = start_va.floor();
+        let end_vpn = end_va.ceil();
+
+        // check if all pages in range are mapped
+        for vpn in VPNRange::new(start_vpn, end_vpn) {
+            if self.translate(vpn).is_none() {
+                return -1;
+            }
+        }
+
+        // find and update areas that contain the unmapped range
+        for area in &mut self.areas {
+            let area_start = area.vpn_range.get_start();
+            let area_end = area.vpn_range.get_end(); 
+
+            if area_start < end_vpn && area_end > start_vpn {
+                let area_start = area.vpn_range.get_start();
+                let area_end = area.vpn_range.get_end();
+            
+                // Check if this area overlaps with munmap range
+                if area_start < end_vpn && area_end > start_vpn {
+                    let overlap_start = area_start.max(start_vpn);
+                    let overlap_end = area_end.min(end_vpn);
+                    
+                    // Unmap and remove frames for overlapped pages
+                    for vpn in VPNRange::new(overlap_start, overlap_end) {
+                        area.unmap_one(&mut self.page_table, vpn);
+                    }
+                }
+            }
+        }
+        0
+    }
 
 }
 /// map area structure, controls a contiguous piece of virtual memory
