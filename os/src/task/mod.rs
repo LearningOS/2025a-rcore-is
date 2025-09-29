@@ -15,6 +15,7 @@ mod switch;
 mod task;
 
 use crate::loader::{get_app_data, get_num_app};
+use crate::mm::MapPermission;
 use crate::sync::UPSafeCell;
 use crate::trap::TrapContext;
 use alloc::vec::Vec;
@@ -230,4 +231,10 @@ pub fn incr_syscall_count(syscall_id: usize) {
 /// Get syscall counter for current task
 pub fn get_syscall_count(syscall_id: usize) -> usize {
     TASK_MANAGER.get_syscall_count(syscall_id)
+}
+
+
+/// Map memory for current task
+pub fn mmap(_start: usize, _len: usize, _perm: MapPermission) -> isize {
+    -1
 }
