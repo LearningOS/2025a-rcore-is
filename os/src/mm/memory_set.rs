@@ -262,6 +262,29 @@ impl MemorySet {
             false
         }
     }
+    /// check if a virtual address range is free
+    pub fn is_range_free(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
+        let start_vpn = start_va.floor();
+        let end_vpn = end_va.ceil();
+        for vpn in VPNRange::new(start_vpn, end_vpn) {
+            if self.translate(vpn).is_some() {
+                return false;
+            }
+        }
+        true
+    }
+    /// map a virtual address range
+    pub fn mmap(&mut self, start_va: VirtAddr, end_va: VirtAddr, perm: MapPermission) -> isize {
+        if !self.is_range_free(start_va, end_va) {
+            return -1;
+        }
+
+        self.push(
+            MapArea::new(start_va, end_va, MapType::Framed, perm),
+            None);
+        0
+    }
+
 }
 /// map area structure, controls a contiguous piece of virtual memory
 pub struct MapArea {

@@ -103,6 +103,14 @@ impl TaskControlBlock {
             None
         }
     }
+
+    
+    /// map virtual memory range (for SYS_MMAP)
+    pub fn mmap(&mut self, start: usize, len:usize, perm:MapPermission) -> isize {
+        let start_va =  VirtAddr(start);
+        let end_va = VirtAddr(start + len);
+        self.memory_set.mmap(start_va, end_va, perm)
+    }
 }
 
 #[derive(Copy, Clone, PartialEq)]
