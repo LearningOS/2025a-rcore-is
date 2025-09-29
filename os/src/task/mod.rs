@@ -244,7 +244,7 @@ pub fn mmap(start: usize, len: usize, perm: MapPermission) -> isize {
     inner.tasks[current].mmap(start, len, perm)
 }
 /// unmap memory for current task
-pub fn mnumap(_start: usize, _len: usize) -> isize {
+pub fn munmap(_start: usize, _len: usize) -> isize {
     let mut inner = TASK_MANAGER.inner.exclusive_access();
     let current = inner.current_task;
     inner.tasks[current].munmap(_start, _len)

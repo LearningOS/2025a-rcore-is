@@ -2,7 +2,7 @@
 use crate::{
     config::PAGE_SIZE, 
     mm::{translated_byte_buffer, MapPermission, VirtAddr, PageTable}, 
-    task::{change_program_brk, current_task_id, current_user_token, exit_current_and_run_next, get_syscall_count, mmap, mnumap, suspend_current_and_run_next}, timer::get_time_us
+    task::{change_program_brk, current_task_id, current_user_token, exit_current_and_run_next, get_syscall_count, mmap, munmap, suspend_current_and_run_next}, timer::get_time_us
 };
 
 
@@ -119,11 +119,13 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
 pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
     // [ch4] 检查页边界对其
     if start % PAGE_SIZE != 0 {
+        trace!("kernel: sys_mmap {} {:x}/{:x}/{:x} {}", current_task_id(), start, len, port, -1);
         return -1;
     }
 
     // [ch4] 检查port合法性
     if port > 0x7 || port & 0x7 == 0 {
+        trace!("kernel: sys_mmap {} {:x}/{:x}/{:x} {}", current_task_id(), start, len, port, -1);
         return -1;
     }
 
@@ -140,13 +142,13 @@ pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
     }
 
     let i = mmap(start, len, map_perm);
-    trace!("kernel sys_mmap {} {:x}/{:x}/{:x} {}", current_task_id(), start, len, port, i);
+    trace!("kernel: sys_mmap {} {:x}/{:x}/{:x} {}", current_task_id(), start, len, port, i);
     i
 }
 
 // YOUR JOB: Implement munmap.
 pub fn sys_munmap(start: usize, len: usize) -> isize {  
-    trace!("kernel: sys_nummap {} {start:x}/{len:x}", current_task_id());
+    trace!("kernel: sys_munmap {} {start:x}/{len:x}", current_task_id());
     // 检查参
     if start % PAGE_SIZE != 0 {
         return -1;
@@ -156,13 +158,13 @@ pub fn sys_munmap(start: usize, len: usize) -> isize {
         return 0;
     }
 
-    trace!("kernel: sys_nummap-1 {} {start:x}/{len:x}", current_task_id());
+    trace!("kernel: sys_munmap-1 {} {start:x}/{len:x}", current_task_id());
     // size 对其页面边界
     let len = (len + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
-    trace!("kernel: sys_nummap-2 {} {start:x}/{len:x}", current_task_id());
+    trace!("kernel: sys_munmap-2 {} {start:x}/{len:x}", current_task_id());
 
-    let r = mnumap(start, len);
-    trace!("kernel: sys_nummap {} {start:x}/{len:x} {r}", current_task_id());
+    let r = munmap(start, len);
+    trace!("kernel: sys_munmap {} {start:x}/{len:x} {r}", current_task_id());
     r
 }
 /// change data segment size
