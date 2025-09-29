@@ -1,9 +1,10 @@
 //! Process management syscalls
 use crate::{
     config::PAGE_SIZE, 
-    mm::{translated_byte_buffer, MapPermission}, 
+    mm::{translated_byte_buffer, MapPermission, VirtAddr, PageTable}, 
     task::{change_program_brk, current_task_id, current_user_token, exit_current_and_run_next, get_syscall_count, mmap, mnumap, suspend_current_and_run_next}, timer::get_time_us
 };
+
 
 #[repr(C)]
 #[derive(Debug)]
@@ -76,23 +77,34 @@ pub fn sys_trace(trace_request: usize, id: usize, data: usize) -> isize {
     trace!("kernel: sys_trace");
     match trace_request {
         0 => {
-            let bufs = translated_byte_buffer(
-                current_user_token(), id as *const u8, 1);
-            if bufs.len() == 0 {
-                -1
-            } else {
-                bufs[0][0].into()
+            let token = current_user_token();
+            let pgtbl = PageTable::from_token(token);
+            let vpn = VirtAddr::from(id).floor().into();
+            if let Some(pte) = pgtbl.translate(vpn) {
+                if pte.is_user() && pte.readable() {
+                    let pa = pte.ppn().0 << 12 | (id & 0xfff);
+                    let ptr = pa as *const u8;
+                    let val = unsafe { *ptr };
+                    return val as isize;
+                }   
             }
+            -1
         },
         1 => {
-            let mut bufs = translated_byte_buffer(
-                current_user_token(), id as *const u8, 1);
-            if bufs.len() == 0 {
-                -1
-            } else {
-                bufs[0][0] = data as u8;
-                0
+            let token = current_user_token();
+            let pgtbl = PageTable::from_token(token);
+            let vpn = VirtAddr::from(id).floor().into();
+            if let Some(pte) = pgtbl.translate(vpn) {
+                if pte.is_user() && pte.writable() {
+                    let pa = pte.ppn().0 << 12 | (id & 0xfff);
+                    let ptr = pa as *mut u8;
+                    unsafe {
+                        ptr.write(data as u8);
+                    }
+                    return 0;       
+                }   
             }
+            -1
         },
         2 => {
             let i = get_syscall_count(id) as isize;
