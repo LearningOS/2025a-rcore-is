@@ -232,9 +232,18 @@ pub fn incr_syscall_count(syscall_id: usize) {
 pub fn get_syscall_count(syscall_id: usize) -> usize {
     TASK_MANAGER.get_syscall_count(syscall_id)
 }
-
-
-/// Map memory for current task
-pub fn mmap(_start: usize, _len: usize, _perm: MapPermission) -> isize {
+/// get current task index
+pub fn current_task_id() -> usize {
+    let inner = TASK_MANAGER.inner.exclusive_access();
+    inner.current_task
+}
+/// map memory for current task
+pub fn mmap(start: usize, len: usize, perm: MapPermission) -> isize {
+    let mut inner = TASK_MANAGER.inner.exclusive_access();
+    let current = inner.current_task;
+    inner.tasks[current].mmap(start, len, perm)
+}
+/// unmap memory for current task
+pub fn mnumap(_start: usize, _len: usize) -> isize {
     -1
 }

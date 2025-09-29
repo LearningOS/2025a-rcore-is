@@ -2,7 +2,7 @@
 use crate::{
     config::PAGE_SIZE, 
     mm::{translated_byte_buffer, MapPermission}, 
-    task::{change_program_brk, current_task_id, current_user_token, exit_current_and_run_next, get_syscall_count, mmap, suspend_current_and_run_next}, timer::get_time_us
+    task::{change_program_brk, current_task_id, current_user_token, exit_current_and_run_next, get_syscall_count, mmap, mnumap, suspend_current_and_run_next}, timer::get_time_us
 };
 
 #[repr(C)]
@@ -133,9 +133,25 @@ pub fn sys_mmap(start: usize, len: usize, port: usize) -> isize {
 }
 
 // YOUR JOB: Implement munmap.
-pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    trace!("kernel: sys_munmap NOT IMPLEMENTED YET!");
-    -1
+pub fn sys_munmap(start: usize, len: usize) -> isize {  
+    trace!("kernel: sys_nummap {} {start:x}/{len:x}", current_task_id());
+    // 检查参
+    if start % PAGE_SIZE != 0 {
+        return -1;
+    }
+    // len 可以为0，如果为0直接返回成功
+    if len == 0 {
+        return 0;
+    }
+
+    trace!("kernel: sys_nummap-1 {} {start:x}/{len:x}", current_task_id());
+    // size 对其页面边界
+    let len = (len + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE;
+    trace!("kernel: sys_nummap-2 {} {start:x}/{len:x}", current_task_id());
+
+    let r = mnumap(start, len);
+    trace!("kernel: sys_nummap {} {start:x}/{len:x} {r}", current_task_id());
+    r
 }
 /// change data segment size
 pub fn sys_sbrk(size: i32) -> isize {
