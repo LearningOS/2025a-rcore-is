@@ -33,7 +33,7 @@ pub fn sys_yield() -> isize {
 
 /// get time with second and microsecond
 pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
-    trace!("kernel: sys_get_time");
+    // trace!("kernel: sys_get_time");
     let us = get_time_us();
     
     let tv = TimeVal {
