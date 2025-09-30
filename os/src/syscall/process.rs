@@ -22,7 +22,7 @@ pub fn sys_exit(_exit_code: i32) -> ! {
 
 /// current task gives up resources for other tasks
 pub fn sys_yield() -> isize {
-    trace!("kernel: sys_yield");
+    // trace!("kernel: sys_yield");
     suspend_current_and_run_next();
     0
 }

@@ -266,11 +266,19 @@ impl MemorySet {
     pub fn is_range_free(&self, start_va: VirtAddr, end_va: VirtAddr) -> bool {
         let start_vpn = start_va.floor();
         let end_vpn = end_va.ceil();
+
+        // trace!("[func] is_range_free:1 --  {:x} {:x}", start_va.0, end_va.0);
+        // trace!("[func] is_range_free:2 --  {:x} {:x}", start_vpn.0, end_vpn.0);
         for vpn in VPNRange::new(start_vpn, end_vpn) {
-            if self.translate(vpn).is_some() {
-                return false;
+            // trace!("[func] is_range_free:3-0 --  {:x} {}", vpn.0, self.translate(vpn).is_some());
+            if let Some(pte) = self.translate(vpn) {
+                if pte.is_valid() {
+                    trace!("[func] is_range_free:3 --  {:x} {}", vpn.0, false);
+                    return false;
+                }
             }
         }
+        trace!("[func] is_range_free:4 --  {:x} {:x} true", start_vpn.0, end_vpn.0);
         true
     }
     /// map a virtual address range
@@ -279,6 +287,8 @@ impl MemorySet {
             return -1;
         }
 
+        trace!("[func] MemorySet::mmap::1 {:x} {:x}",
+            start_va.floor().0, end_va.floor().0);
         self.push(
             MapArea::new(start_va, end_va, MapType::Framed, perm),
             None);
@@ -291,7 +301,18 @@ impl MemorySet {
 
         // check if all pages in range are mapped
         for vpn in VPNRange::new(start_vpn, end_vpn) {
-            if self.translate(vpn).is_none() {
+            let x = if let Some(pte) = self.translate(vpn) {
+                if pte.is_valid() && pte.is_user() {
+                    0
+                } else {
+                    -1
+                }
+            } else {
+                -1
+            };
+
+            // trace!("kernel-memory-set-munmap-a {:x} {}", vpn.0, x);
+            if x == -1 {
                 return -1;
             }
         }
